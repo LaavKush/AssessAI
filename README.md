@@ -1,18 +1,31 @@
-# SHL Assessment Recommender
+# AI Assessment Recommender
 
 A conversational agent that helps hiring managers find the right SHL Individual Test Solutions through multi-turn dialogue.
 
 ## Architecture
 
 ```
-POST /chat  ←→  FastAPI  →  Claude claude-sonnet-4-20250514  ←  catalog.json
-                                    ↕
-                          Stateless conversation history
+POST /chat
+    ↓
+FastAPI Backend
+    ↓
+Semantic Retrieval Layer
+(SentenceTransformers + FAISS)
+    ↓
+Groq LLM
+(llama-3.3-70b-versatile)
+    ↓
+Catalog Validation Layer
+(catalog.json grounding)
+    ↓
+Structured JSON Response
+    ↕
+Stateless Conversation History
 ```
 
 **Key design decisions:**
 - **Stateless API**: Full conversation history in every request. No session storage needed, trivial to scale.
-- **Catalog-grounded**: Claude's system prompt includes the full catalog. Every recommendation is validated against `catalog.json` before returning — no hallucinated URLs possible.
+- **Catalog-grounded**: Groq's system prompt includes the full catalog. Every recommendation is validated against `catalog.json` before returning — no hallucinated URLs possible.
 - **JSON-only LLM output**: The agent is prompted to return only JSON, making structured extraction reliable without brittle regex parsing.
 - **Turn cap enforcement**: Hard limit of 8 turns in Python code, not just prompting.
 
@@ -27,7 +40,7 @@ pip install -r requirements.txt
 ### 2. Set API key
 
 ```bash
-export ANTHROPIC_API_KEY=your-key-here
+export GROQ_API_KEY=your-key-here
 ```
 
 ### 3. Run locally
@@ -120,19 +133,19 @@ python eval.py --url http://localhost:8000 --traces traces/
 
 1. Push to GitHub
 2. Connect repo in [Render dashboard](https://render.com)
-3. Set `ANTHROPIC_API_KEY` in environment variables
+3. Set `GROQ_API_KEY` in environment variables
 4. Deploy — Render uses `render.yaml` automatically
 
 ### Docker
 
 ```bash
 docker build -t shl-recommender .
-docker run -e ANTHROPIC_API_KEY=your-key -p 8000:8000 shl-recommender
+docker run -e GROQ_API_KEY=your-key -p 8000:8000 shl-recommender
 ```
 
 ### Railway / Fly.io
 
-Both support Python + `requirements.txt` autodeploy. Set the `ANTHROPIC_API_KEY` environment variable in the dashboard.
+Both support Python + `requirements.txt` autodeploy. Set the `GROQ_API_KEY` environment variable in the dashboard.
 
 ## Conversational Behaviors
 
